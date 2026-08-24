@@ -34,10 +34,8 @@ test:
   <<: *default
   database: lakeview_test
 
+
 production:
   <<: *default
-  database: <%= ENV.fetch("DATABASE_NAME", "lakeview_production") %>
-  username: <%= ENV.fetch("DATABASE_USERNAME", "lakeview") %>
-  password: <%= ENV["DATABASE_PASSWORD"] %>
-  # Prefer DATABASE_URL in production:
-  # url: <%= ENV["DATABASE_URL"] %>
+  url: <%= ENV["DATABASE_URL"] %>
+

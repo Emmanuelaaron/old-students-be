@@ -22,6 +22,7 @@ class Contribution < ApplicationRecord
     message: "already has a contribution for this member"
   }
   validate :member_must_be_approved
+  validate :month_must_be_earliest_overdue_unpaid, on: :create
   validate :proof_must_be_image, if: -> { proof_of_payment.attached? }
 
   scope :approved, -> { where(status: "approved") }
@@ -96,6 +97,15 @@ class Contribution < ApplicationRecord
     self.has_fine = self.class.late?(month, paid_at)
     self.fine_amount = has_fine? ? FINE_AMOUNT : 0
     self.fine_paid = false
+  end
+
+  def month_must_be_earliest_overdue_unpaid
+    return if month.blank? || member_id.blank? || member.blank?
+
+    earliest = member.earliest_overdue_unpaid_month
+    return if earliest == month
+
+    errors.add(:month, "must be the earliest overdue unpaid month#{earliest ? " (#{earliest})" : ""}")
   end
 
   def member_must_be_approved

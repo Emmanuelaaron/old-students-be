@@ -6,7 +6,7 @@ class Member < ApplicationRecord
   has_many :role_histories, dependent: :destroy
   has_many :annual_subscriptions, dependent: :destroy
 
-  GENDERS = %w[Male Female Other].freeze
+  GENDERS = %w[Male Female].freeze
 
   enum role: {
     member: 0,
@@ -36,6 +36,31 @@ class Member < ApplicationRecord
 
   def full_name
     "#{first_name} #{last_name}"
+  end
+
+  def unpaid_months
+    return [] unless joined_at?
+    months = []
+    cursor = joined_at.to_date.beginning_of_month
+    last = Time.zone.today.beginning_of_month
+    while cursor <= last
+      months << cursor.strftime("%Y-%m")
+      cursor = cursor.next_month
+    end
+    months
+  end
+
+  def paid_months
+    Contribution.where(member_id: id, status: %w[pending approved]).pluck(:month)
+  end
+
+  def unpaid_overdue_months
+    taken = paid_months.to_set
+    unpaid_months.select { |m| !taken.include?(m) && Contribution.late?(m, Time.zone.now) }
+  end
+
+  def earliest_overdue_unpaid_month
+    unpaid_overdue_months.first
   end
 
   def admin?
